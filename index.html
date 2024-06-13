@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .w-100 {
+            max-width: 100%;
+            min-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #log-container {
+            height: 90vh;
+            resize: none;
+            overflow-y: auto;
+            /* text size */
+            font-size: 28px;
+        }
+
+        .death {
+            color: red;
+        }
+
+        .kill {
+            color: green;
+        }
+
+        .teamkill {
+            color: orange;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid d-flex justify-content-center align-items-center vh-100">
+        <div class="w-100">
+            <div class="mb-3">
+                <div id="log-container" class="form-control" readonly></div>
+                <div class="mt-3">
+                    <button class="btn btn-primary" id="refreshButton" onclick="refreshLogs()">Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="position-fixed bottom-0 end-0 p-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="darkModeSwitch">
+                <label class="form-check-label" for="darkModeSwitch">Dark Mode</label>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            const api = 'https://hs.vtolvr.live/api/v1';
+            const logEndpoint = '/public/log/';
+            const userID = '76561198864447681';
+
+            function refreshLogs() {
+                const refreshButton = document.getElementById('refreshButton');
+                refreshButton.innerHTML = 'Refreshing... <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                refreshButton.disabled = true;
+
+                fetch(api + logEndpoint + userID)
+                    .then(response => response.text())
+                    .then(data => {
+                        const logContainer = document.getElementById('log-container');
+                        const entries = data.split('[').slice(1);
+                        const formattedEntries = entries.map(entry => {
+                            const className = entry.match(/Death/) ? 'death' :
+                                entry.match(/Kill/) ? 'kill' :
+                                    entry.match(/Teamkill/) ? 'teamkill' : '';
+                            return `<div class="${className}">[${entry}</div>`;
+                        });
+                        logContainer.innerHTML = formattedEntries.join('');
+                        logContainer.scrollTop = logContainer.scrollHeight;
+                    })
+                    .finally(() => {
+                        refreshButton.innerHTML = 'Refresh';
+                        refreshButton.disabled = false;
+                    });
+            }
+
+            document.addEventListener('DOMContentLoaded', (event) => {
+                const htmlElement = document.documentElement;
+                const switchElement = document.getElementById('darkModeSwitch');
+
+                const currentTheme = localStorage.getItem('bsTheme') || 'dark';
+                htmlElement.setAttribute('data-bs-theme', currentTheme);
+                switchElement.checked = currentTheme === 'dark';
+
+                switchElement.addEventListener('change', function () {
+                    const theme = this.checked ? 'dark' : 'light';
+                    htmlElement.setAttribute('data-bs-theme', theme);
+                    localStorage.setItem('bsTheme', theme);
+                });
+            });
+
+            refreshLogs();
+        </script>
+</body>
+
+</html>
